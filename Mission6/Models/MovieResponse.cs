@@ -13,9 +13,6 @@ namespace Mission6.Models
         public int MovieID { get; set; }
 
         [Required]
-        public string Category { get; set; }
-
-        [Required]
         public string Title { get; set; }
 
         [Required]
@@ -34,6 +31,11 @@ namespace Mission6.Models
 
         [MaxLength(25)]
         public string Notes { get; set; }
+
+
+        //Foreign key relationship
+        public int CategoryID { get; set; }
+        public Category Category { get; set; }
 
     }
 }

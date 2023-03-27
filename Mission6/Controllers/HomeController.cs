@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Mission6.Models;
 using System;
@@ -11,14 +12,14 @@ namespace Mission6.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+    
 
-        private MovieContext movieContext { get; set; }
+        private MovieContext MovieContext { get; set; }
 
-        public HomeController(ILogger<HomeController> logger, MovieContext x)
+        public HomeController( MovieContext x)
         {
-            _logger = logger;
-            movieContext = x;
+           
+            MovieContext = x;
         }
 
         public IActionResult Index()
@@ -34,26 +35,83 @@ namespace Mission6.Controllers
         [HttpGet]
         public IActionResult NewMovies()
         {
+            ViewBag.Categories = MovieContext.Categories.ToList();
+
             return View();
+        }
+
+        [HttpGet]
+        public IActionResult Waitlist()
+        {
+            var movies = MovieContext.responses.Include(x => x.Category).OrderBy(x => x.Title).ToList();
+
+            return View(movies);
         }
 
         [HttpPost]
         public IActionResult NewMovies(MovieResponse mr)
         {
-            movieContext.Add(mr);
-            movieContext.SaveChanges();
-            return View("Confirmation", mr);
+            if (ModelState.IsValid)
+            {
+                MovieContext.Add(mr);
+                MovieContext.SaveChanges();
+                return View("Confirmation", mr);
+            }
+            else
+            {
+                ViewBag.Categories = MovieContext.Categories.ToList();
+                return View(mr);
+            }
+
+
         }
 
-        public IActionResult Privacy()
+        [HttpGet]
+        public IActionResult Edit (int movieid)
         {
-            return View();
+            ViewBag.Categories = MovieContext.Categories.ToList();
+
+            var movie = MovieContext.responses.Single(x => x.MovieID == movieid);
+
+            return View("NewMovies", movie);
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        [HttpPost]
+        public IActionResult Edit (MovieResponse mr, int movieid)
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            if (ModelState.IsValid)
+            {
+                MovieContext.Update(mr);
+                MovieContext.SaveChanges();
+
+                return RedirectToAction("Waitlist");
+            }
+            else
+            {
+                ViewBag.Categories = MovieContext.Categories.ToList();
+
+                var movie = MovieContext.responses.Single(x => x.MovieID == movieid);
+
+                return View("NewMovies", movie);
+            }
+
+        }
+
+        [HttpGet]
+        public IActionResult Delete(int movieid)
+        {
+            var movie = MovieContext.responses.Single(x => x.MovieID == movieid);
+
+            return View(movie);
+        }
+
+        [HttpPost]
+        public IActionResult Delete(MovieResponse mr)
+        {
+            MovieContext.responses.Remove(mr);
+            MovieContext.SaveChanges();
+
+            return RedirectToAction("Waitlist");
         }
     }
 }
